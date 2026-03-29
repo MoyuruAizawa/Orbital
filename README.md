@@ -1,12 +1,12 @@
 # Limarun
 
-Limarun is a lightweight Go tool for managing GitHub Actions self-hosted runners as Docker containers on a user-provided Docker context.
+Limarun is a lightweight Go tool that issues GitHub Actions self-hosted runner registration tokens via a GitHub App and uses them to start runner-compatible Docker containers on a user-provided Docker context.
 
-It ensures your runner containers are running, registers them dynamically through a GitHub App, and cleans them up gracefully when the process stops.
+It keeps the configured containers running, recreates them when they stop, and cleans them up gracefully when the process stops.
 
 ## Features
 
-- **Docker context based operation**: Connects to the configured Docker context and manages runner containers there.
+- **Docker context based operation**: Connects to the configured Docker context and starts runner-compatible containers there.
 - **Dynamic runner registration**: Authenticates as a GitHub App and generates runner registration tokens on demand.
 - **Runner container reconciliation**: Keeps the configured number of runner containers running and recreates them when necessary.
 - **Graceful shutdown**: Stops and removes managed runner containers when Limarun receives a termination signal.
@@ -68,10 +68,33 @@ runtime:
   pollIntervalSeconds: 10
 ```
 
+### Runner image contract
+
+Limarun does not build, inspect, or validate the runner image specified by `docker.image`.
+It starts the container with environment variables and expects the image itself to consume
+those values and launch a GitHub Actions self-hosted runner.
+
+Your `docker.image` must therefore be a runner-compatible image that:
+
+- reads the environment variables passed by Limarun
+- registers itself as a GitHub Actions self-hosted runner
+- starts the runner process inside the container
+
+Limarun passes the following environment variables to each runner container:
+
+- `GITHUB_URL`
+- `RUNNER_NAME`
+- `RUNNER_GROUP`
+- `RUNNER_LABELS`
+- `RUNNER_TOKEN`
+
+See `example/androidrunner.Dockerfile` and `example/entrypoint.sh` for a reference
+implementation of a compatible runner image.
+
 ### Configuration fields
 
 - `docker.context`: Name of the Docker context Limarun should use.
-- `docker.image`: Docker image used for runner containers. Limarun also derives managed container names from this value, so use a value that is safe to reuse in Docker container names.
+- `docker.image`: Docker image used for runner containers. This must be a runner-compatible image that consumes the environment variables passed by Limarun and starts a self-hosted runner. Limarun also derives managed container names from this value, so use a value that is safe to reuse in Docker container names.
 - `github.org`: GitHub organization name.
 - `github.appId`: GitHub App ID.
 - `github.installationId`: GitHub App installation ID.
