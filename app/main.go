@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -45,6 +46,13 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("Docker context[%s] is reachable\n", cfg.Docker.Context)
+
+	fmt.Printf("building runner image[%s] from source image[%s]...\n", cfg.Docker.RunnerImageName, cfg.Docker.SourceImage)
+	if err := docker.BuildRunnerImage(ctx, cfg.Docker.Context, cfg.Docker.SourceImage, cfg.Docker.RunnerImageName); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to build runner image[%s]: %v\n", cfg.Docker.RunnerImageName, err)
+		os.Exit(1)
+	}
+	fmt.Printf("runner image[%s] built\n", cfg.Docker.RunnerImageName)
 
 	if err := ensureRunners(ctx, cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to ensure runners: %v\n", err)
@@ -104,7 +112,7 @@ func ensureRunners(ctx context.Context, cfg config.Config) error {
 		if err := docker.RunContainer(
 			ctx,
 			cfg.Docker.Context,
-			cfg.Docker.Image,
+			cfg.Docker.RunnerImageName,
 			containerName,
 			cfg.Github.Url(),
 			token,
@@ -135,7 +143,21 @@ func cleanupContainers(ctx context.Context, cfg config.Config) error {
 }
 
 func runnerContainerName(cfg config.Config, index int) string {
-	return cfg.Docker.Image + "-" + strconv.Itoa(index+1)
+	return sanitizeContainerName(cfg.Docker.RunnerImageName) + "-" + strconv.Itoa(index+1)
+}
+
+func sanitizeContainerName(name string) string {
+	replacer := strings.NewReplacer(
+		"/", "-",
+		":", "-",
+		"@", "-",
+	)
+	sanitized := replacer.Replace(strings.ToLower(name))
+	sanitized = strings.Trim(sanitized, "-._")
+	if sanitized == "" {
+		return "runner"
+	}
+	return sanitized
 }
 
 func runnerName(cfg config.Config, index int) string {

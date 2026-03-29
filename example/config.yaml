@@ -1,6 +1,7 @@
 docker:
   context: default
-  image: runner
+  sourceImage: source:latest
+  runnerImageName: orbital-runner:latest
 
 github:
   org: ExampleOrg

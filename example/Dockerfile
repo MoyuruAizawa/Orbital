@@ -6,10 +6,6 @@ ENV ANDROID_HOME=/opt/android-sdk
 ENV DEBIAN_FRONTEND=noninteractive
 ENV GRADLE_OPTS=-Dorg.gradle.vfs.watch=false
 
-ARG RUNNER_VERSION=2.333.1
-ENV RUNNER_ALLOW_RUNASROOT=1
-ENV RUNNER_WORKDIR="_work"
-
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         openjdk-21-jdk \
@@ -46,14 +42,3 @@ RUN export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(which javac)")")")"
         "platforms;android-36" \
         "build-tools;35.0.1" \
         "build-tools;36.1.0"
-
-WORKDIR /actions-runner
-RUN curl -L --fail --show-error -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz \
-    && tar xzf actions-runner.tar.gz \
-    && rm actions-runner.tar.gz \
-    && ./bin/installdependencies.sh
-
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]

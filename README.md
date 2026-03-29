@@ -19,20 +19,13 @@ Before using Orbital, make sure you have:
 - [Docker](https://www.docker.com/)
 - A reachable Docker context already configured via `docker context`
 - A GitHub App installed on your organization with permission to manage self-hosted runners
-- A runner image that can register itself using the environment variables passed by Orbital
+- A source image that contains the tools and runtime environment your jobs need
 
-The repository includes an example runner image implementation in:
+The repository includes an example source image in:
 
 - `example/androidrunner.Dockerfile`
-- `example/entrypoint.sh`
 
-That sample runner configures the GitHub Actions runner in ephemeral mode (`--ephemeral`) and expects the following environment variables:
-
-- `GITHUB_URL`
-- `RUNNER_NAME`
-- `RUNNER_GROUP`
-- `RUNNER_LABELS`
-- `RUNNER_TOKEN`
+Orbital builds the actual runner image itself by layering the GitHub Actions runner and its entrypoint on top of your configured source image.
 
 ## Configuration
 
@@ -43,7 +36,8 @@ Example:
 ```yaml
 docker:
   context: default
-  image: runner
+  sourceImage: source:latest
+  runnerImageName: orbital-runner:latest
 
 github:
   org: ExampleOrg
@@ -70,15 +64,24 @@ runtime:
 
 ### Runner image contract
 
-Orbital does not build, inspect, or validate the runner image specified by `docker.image`.
-It starts the container with environment variables and expects the image itself to consume
-those values and launch a GitHub Actions self-hosted runner.
+Orbital builds a runner image on startup using `docker.sourceImage` as the Dockerfile `FROM` image.
+The generated image is tagged with `docker.runnerImageName` and is then used for `docker run`.
 
-Your `docker.image` must therefore be a runner-compatible image that:
+Your `docker.sourceImage` is responsible for providing the environment your jobs need.
+Orbital is responsible for adding the GitHub Actions runner itself, installing the minimum runner download dependencies, and writing the startup entrypoint.
 
-- reads the environment variables passed by Orbital
-- registers itself as a GitHub Actions self-hosted runner
-- starts the runner process inside the container
+Current assumptions and limits:
+
+- build and run always use the same `docker.context`
+- Orbital currently targets Linux runner containers
+- runner archive selection is resolved from the inspected OS/CPU architecture of `docker.sourceImage`
+- Orbital currently supports source images whose package manager is one of: `apt-get`, `apk`, `dnf`, or `yum`
+- distroless, scratch, and other images without a supported package manager are currently not supported
+- `docker.sourceImage` should already be compatible with the GitHub Actions runner runtime requirements
+
+Orbital determines the runner archive platform by running `docker image inspect` against
+`docker.sourceImage` on the configured Docker context and uses that result when building the
+final runner image.
 
 Orbital passes the following environment variables to each runner container:
 
@@ -88,19 +91,20 @@ Orbital passes the following environment variables to each runner container:
 - `RUNNER_LABELS`
 - `RUNNER_TOKEN`
 
-See `example/androidrunner.Dockerfile` and `example/entrypoint.sh` for a reference
-implementation of a compatible runner image.
+See `example/Dockerfile` for a reference implementation of a compatible
+source image.
 
 ### Configuration fields
 
 - `docker.context`: Name of the Docker context Orbital should use.
-- `docker.image`: Docker image used for runner containers. This must be a runner-compatible image that consumes the environment variables passed by Orbital and starts a self-hosted runner. Orbital also derives managed container names from this value, so use a value that is safe to reuse in Docker container names.
+- `docker.sourceImage`: Existing Docker image used as the `FROM` image when Orbital builds the runner image.
+- `docker.runnerImageName`: Tag name for the runner image built by Orbital and used for runner containers.
 - `github.org`: GitHub organization name.
 - `github.appId`: GitHub App ID.
 - `github.installationId`: GitHub App installation ID.
 - `github.pem`: Path to the GitHub App private key (`.pem`).
-- `runner.group`: Runner group name. Required by the sample runner image in `example/entrypoint.sh`.
-- `runner.labels`: Custom labels assigned to the runner. Required by the sample runner image in `example/entrypoint.sh`.
+- `runner.group`: Runner group name. Required by the generated runner entrypoint.
+- `runner.labels`: Custom labels assigned to the runner. Required by the generated runner entrypoint.
 - `runner.namePrefix`: Prefix used for runner names.
 - `runner.count`: Number of runner containers Orbital should keep running.
 - `mount.source`: Host path mounted into the runner container.
@@ -138,14 +142,15 @@ When Orbital starts, it will:
 1. Load the configuration file.
 2. Check whether the configured Docker context is reachable.
 3. Generate GitHub runner registration tokens through your GitHub App.
-4. Start and maintain the configured number of runner containers.
-5. Keep polling at the configured interval and recreate stopped containers if needed.
-6. Stop and remove managed containers when the process is terminated, such as with `Ctrl+C`.
+4. Build the runner image from `docker.sourceImage`.
+5. Start and maintain the configured number of runner containers.
+6. Keep polling at the configured interval and recreate stopped containers if needed.
+7. Stop and remove managed containers when the process is terminated, such as with `Ctrl+C`.
 
 ## Notes
 
-- Managed container names are derived from `docker.image` and a 1-based index, for example `runner-1`, `runner-2`, and `runner-3`.
+- Managed container names are derived from a sanitized `docker.runnerImageName` and a 1-based index.
 - Runner names are generated from `runner.namePrefix` and a 1-based index, for example `ubuntu-1`, `ubuntu-2`, and `ubuntu-3`.
 - Avoid including a trailing hyphen in `runner.namePrefix`, otherwise generated runner names become harder to read, such as `ubuntu--1`.
-- If you use the sample runner image, `runner.group` and `runner.labels` must be set because the sample entrypoint validates both values before starting the runner.
+- `runner.group` and `runner.labels` must be set because the generated runner entrypoint validates both values before starting the runner.
 - Orbital does not start container runtimes for you. Ensure the target Docker Engine behind the configured context is already running before starting Orbital.

@@ -17,8 +17,9 @@ type Config struct {
 }
 
 type DockerConfig struct {
-	Context string `yaml:"context"`
-	Image   string `yaml:"image"`
+	Context         string `yaml:"context"`
+	SourceImage     string `yaml:"sourceImage"`
+	RunnerImageName string `yaml:"runnerImageName"`
 }
 
 type GithubConfig struct {
@@ -70,8 +71,11 @@ func validateConfig(config Config) error {
 	if strings.TrimSpace(config.Docker.Context) == "" {
 		return fmt.Errorf("docker.context is required")
 	}
-	if strings.TrimSpace(config.Docker.Image) == "" {
-		return fmt.Errorf("docker.image is required")
+	if strings.TrimSpace(config.Docker.SourceImage) == "" {
+		return fmt.Errorf("docker.sourceImage is required")
+	}
+	if strings.TrimSpace(config.Docker.RunnerImageName) == "" {
+		return fmt.Errorf("docker.runnerImageName is required")
 	}
 	if strings.TrimSpace(config.Github.Org) == "" {
 		return fmt.Errorf("github.org is required")
