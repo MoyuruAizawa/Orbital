@@ -1,13 +1,15 @@
 # Orbital
 
-Orbital is a lightweight Go tool that issues GitHub Actions self-hosted runner registration tokens via a GitHub App and uses them to start runner-compatible Docker containers on a user-provided Docker context.
+Orbital is a lightweight Go tool that starts GitHub Actions self-hosted runners from your Docker image on a configured Docker context.
 
-It keeps the configured containers running, recreates them when they stop, and cleans them up gracefully when the process stops.
+It uses a GitHub App to issue runner registration tokens, builds a runner image from your source image, and keeps the configured runner containers running until shutdown.
 
 ## Features
 
 - **Docker context based operation**: Connects to the configured Docker context and starts runner-compatible containers there.
+- **Runner image build orchestration**: Builds a runner image from a user-provided source image on the configured Docker context.
 - **Dynamic runner registration**: Authenticates as a GitHub App and generates runner registration tokens on demand.
+- **Platform-aware runner injection**: Resolves the GitHub Actions runner archive OS/architecture from the inspected source image metadata.
 - **Runner container reconciliation**: Keeps the configured number of runner containers running and recreates them when necessary.
 - **Graceful shutdown**: Stops and removes managed runner containers when Orbital receives a termination signal.
 
