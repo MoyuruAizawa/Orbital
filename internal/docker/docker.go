@@ -7,8 +7,22 @@ import (
 	"strings"
 )
 
+func CheckConnection(ctx context.Context, dockerContext string) error {
+	_, err := util.RunCommand(ctx,
+		"docker",
+		"--context", dockerContext,
+		"info",
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func RunContainer(
 	ctx context.Context,
+	dockerContext string,
 	image string,
 	containerName string,
 	githubUrl string,
@@ -21,6 +35,7 @@ func RunContainer(
 ) error {
 	_, err := util.RunStreamCommand(ctx,
 		"docker",
+		"--context", dockerContext,
 		"run",
 		"-d",
 		"--name", containerName,
@@ -35,9 +50,10 @@ func RunContainer(
 	return err
 }
 
-func IsContainerRunning(ctx context.Context, name string) (bool, error) {
+func IsContainerRunning(ctx context.Context, dockerContext string, name string) (bool, error) {
 	output, err := util.RunCommand(ctx,
 		"docker",
+		"--context", dockerContext,
 		"inspect",
 		"-f", "{{.State.Running}}",
 		name,
@@ -52,9 +68,10 @@ func IsContainerRunning(ctx context.Context, name string) (bool, error) {
 	return strings.TrimSpace(output) == "true", nil
 }
 
-func StopContainer(ctx context.Context, name string) error {
+func StopContainer(ctx context.Context, dockerContext string, name string) error {
 	output, err := util.RunCommand(ctx,
 		"docker",
+		"--context", dockerContext,
 		"stop",
 		name,
 	)
@@ -68,9 +85,10 @@ func StopContainer(ctx context.Context, name string) error {
 	return nil
 }
 
-func RemoveContainer(ctx context.Context, name string) error {
+func RemoveContainer(ctx context.Context, dockerContext string, name string) error {
 	output, err := util.RunCommand(ctx,
 		"docker",
+		"--context", dockerContext,
 		"rm",
 		"-f",
 		name,
@@ -85,12 +103,12 @@ func RemoveContainer(ctx context.Context, name string) error {
 	return nil
 }
 
-func StopAndRemoveContainer(ctx context.Context, name string) error {
-	if err := StopContainer(ctx, name); err != nil {
+func StopAndRemoveContainer(ctx context.Context, dockerContext string, name string) error {
+	if err := StopContainer(ctx, dockerContext, name); err != nil {
 		return fmt.Errorf("stop container %q: %w", name, err)
 	}
 
-	if err := RemoveContainer(ctx, name); err != nil {
+	if err := RemoveContainer(ctx, dockerContext, name); err != nil {
 		return fmt.Errorf("remove container %q: %w", name, err)
 	}
 

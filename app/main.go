@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"limarun/internal/colima"
 	"limarun/internal/config"
 	"limarun/internal/docker"
 	"limarun/internal/github"
@@ -39,22 +38,13 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	fmt.Printf("checking Colima[%s] status...\n", cfg.Colima.Profile)
-	colimaRunning, err := colima.IsRunning(ctx, cfg.Colima.Profile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to check Colima[%s] status: %v\n", cfg.Colima.Profile, err)
+	fmt.Printf("checking Docker context[%s] connectivity...\n", cfg.Docker.Context)
+	if err := docker.CheckConnection(ctx, cfg.Docker.Context); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to connect to Docker context[%s]: %v\n", cfg.Docker.Context, err)
+		fmt.Fprintf(os.Stderr, ansiYellow+"hint: ensure the target Docker Engine is already available for the configured context"+ansiReset+"\n")
 		os.Exit(1)
 	}
-	if colimaRunning {
-		fmt.Printf("Colima[%s] is running\n", cfg.Colima.Profile)
-	} else {
-		fmt.Printf(ansiYellow+"WARN: Colima[%s] is not running, starting it automatically..."+ansiReset+"\n", cfg.Colima.Profile)
-		if err := colima.Start(ctx, cfg.Colima.Profile); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to start Colima[%s]: %v\n", cfg.Colima.Profile, err)
-			os.Exit(1)
-		}
-		fmt.Printf("Colima[%s] started\n", cfg.Colima.Profile)
-	}
+	fmt.Printf("Docker context[%s] is reachable\n", cfg.Docker.Context)
 
 	if err := ensureRunners(ctx, cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to ensure runners: %v\n", err)
@@ -87,7 +77,7 @@ func ensureRunners(ctx context.Context, cfg config.Config) error {
 	for i := 0; i < cfg.Runner.Count; i++ {
 		containerName := runnerContainerName(cfg, i)
 
-		running, err := docker.IsContainerRunning(ctx, containerName)
+		running, err := docker.IsContainerRunning(ctx, cfg.Docker.Context, containerName)
 		if err != nil {
 			return fmt.Errorf("inspect container %q: %w", containerName, err)
 		}
@@ -107,13 +97,14 @@ func ensureRunners(ctx context.Context, cfg config.Config) error {
 			return fmt.Errorf("generate runner registration token for %q: %w", containerName, err)
 		}
 
-		if err := docker.RemoveContainer(ctx, containerName); err != nil {
+		if err := docker.RemoveContainer(ctx, cfg.Docker.Context, containerName); err != nil {
 			return fmt.Errorf("remove stale container %q: %w", containerName, err)
 		}
 
 		if err := docker.RunContainer(
 			ctx,
-			cfg.Runner.Image,
+			cfg.Docker.Context,
+			cfg.Docker.Image,
 			containerName,
 			cfg.Github.Url(),
 			token,
@@ -135,7 +126,7 @@ func cleanupContainers(ctx context.Context, cfg config.Config) error {
 	for i := 0; i < cfg.Runner.Count; i++ {
 		name := runnerContainerName(cfg, i)
 		fmt.Printf("cleaning up container[%s]...\n", name)
-		if err := docker.StopAndRemoveContainer(ctx, name); err != nil {
+		if err := docker.StopAndRemoveContainer(ctx, cfg.Docker.Context, name); err != nil {
 			return err
 		}
 	}
@@ -144,7 +135,7 @@ func cleanupContainers(ctx context.Context, cfg config.Config) error {
 }
 
 func runnerContainerName(cfg config.Config, index int) string {
-	return cfg.Runner.Image + "-" + strconv.Itoa(index+1)
+	return cfg.Docker.Image + "-" + strconv.Itoa(index+1)
 }
 
 func runnerName(cfg config.Config, index int) string {

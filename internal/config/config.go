@@ -9,15 +9,16 @@ import (
 )
 
 type Config struct {
-	Colima  ColimaConfig  `yaml:"colima"`
+	Docker  DockerConfig  `yaml:"docker"`
 	Github  GithubConfig  `yaml:"github"`
 	Runner  RunnerConfig  `yaml:"runner"`
 	Mount   MountConfig   `yaml:"mount"`
 	Runtime RuntimeConfig `yaml:"runtime"`
 }
 
-type ColimaConfig struct {
-	Profile string `yaml:"profile"`
+type DockerConfig struct {
+	Context string `yaml:"context"`
+	Image   string `yaml:"image"`
 }
 
 type GithubConfig struct {
@@ -34,7 +35,6 @@ func (c *GithubConfig) Url() string {
 type RunnerConfig struct {
 	Group      string   `yaml:"group"`
 	Labels     []string `yaml:"labels"`
-	Image      string   `yaml:"image"`
 	NamePrefix string   `yaml:"namePrefix"`
 	Count      int      `yaml:"count"`
 }
@@ -67,6 +67,12 @@ func LoadConfig(path string) (Config, error) {
 }
 
 func validateConfig(config Config) error {
+	if strings.TrimSpace(config.Docker.Context) == "" {
+		return fmt.Errorf("docker.context is required")
+	}
+	if strings.TrimSpace(config.Docker.Image) == "" {
+		return fmt.Errorf("docker.image is required")
+	}
 	if strings.TrimSpace(config.Github.Org) == "" {
 		return fmt.Errorf("github.org is required")
 	}
@@ -78,9 +84,6 @@ func validateConfig(config Config) error {
 	}
 	if strings.TrimSpace(config.Github.PEMPath) == "" {
 		return fmt.Errorf("github.pem is required")
-	}
-	if strings.TrimSpace(config.Runner.Image) == "" {
-		return fmt.Errorf("runner.image is required")
 	}
 	if strings.TrimSpace(config.Runner.NamePrefix) == "" {
 		return fmt.Errorf("runner.namePrefix is required")

@@ -1,5 +1,6 @@
-colima:
-  profile: default
+docker:
+  context: default
+  image: runner
 
 github:
   org: ExampleOrg
@@ -14,7 +15,6 @@ runner:
     - arm64
     - ubuntu24.04
   namePrefix: ubuntu
-  image: androidrunner
   count: 3
 
 mount:
