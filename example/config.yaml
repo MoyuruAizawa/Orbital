@@ -1,0 +1,25 @@
+colima:
+  profile: default
+
+github:
+  org: ExampleOrg
+  appId: 0000000
+  installationId: 000000000
+  pem: ~/.ssh/example.pem
+
+runner:
+  group: RunnerGroup
+  labels:
+    - linux
+    - arm64
+    - ubuntu24.04
+  namePrefix: ubuntu
+  image: androidrunner
+  count: 3
+
+mount:
+  source: /Volumes/Foo
+  target: /Volumes/Foo
+
+runtime:
+  pollIntervalSeconds: 10
