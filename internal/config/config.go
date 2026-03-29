@@ -92,6 +92,11 @@ func validateConfig(config Config) error {
 	if strings.TrimSpace(config.Runner.NamePrefix) == "" {
 		return fmt.Errorf("runner.namePrefix is required")
 	}
+	for _, label := range config.Runner.Labels {
+		if strings.TrimSpace(label) == "" {
+			return fmt.Errorf("runner.labels must not contain empty values")
+		}
+	}
 	if config.Runner.Count <= 0 {
 		return fmt.Errorf("runner.count must be greater than 0")
 	}

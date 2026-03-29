@@ -13,7 +13,7 @@ runner:
   group: RunnerGroup
   labels:
     - linux
-    - arm64
+    - amd64
     - ubuntu24.04
   namePrefix: ubuntu
   count: 3

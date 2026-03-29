@@ -68,16 +68,6 @@ if [[ -z "${RUNNER_NAME:-}" ]]; then
   exit 1
 fi
 
-if [[ -z "${RUNNER_GROUP:-}" ]]; then
-  echo "RUNNER_GROUP is required" >&2
-  exit 1
-fi
-
-if [[ -z "${RUNNER_LABELS:-}" ]]; then
-  echo "RUNNER_LABELS is required" >&2
-  exit 1
-fi
-
 cleanup() {
   ./config.sh remove --token "${RUNNER_TOKEN}" --unattended || true
   rm -f .runner .credentials .credentials_rsaparams || true
@@ -85,16 +75,25 @@ cleanup() {
 
 trap cleanup EXIT
 
-./config.sh \
+config_args=(
   --url "${GITHUB_URL}" \
   --token "${RUNNER_TOKEN}" \
   --name "${RUNNER_NAME}" \
-  --runnergroup "${RUNNER_GROUP}" \
-  --labels "${RUNNER_LABELS}" \
   --work "${RUNNER_WORKDIR}" \
   --ephemeral \
   --unattended \
   --replace
+)
+
+if [[ -n "${RUNNER_GROUP:-}" ]]; then
+  config_args+=(--runnergroup "${RUNNER_GROUP}")
+fi
+
+if [[ -n "${RUNNER_LABELS:-}" ]]; then
+  config_args+=(--labels "${RUNNER_LABELS}")
+fi
+
+./config.sh "${config_args[@]}"
 
 exec ./run.sh
 `

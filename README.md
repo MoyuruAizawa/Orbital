@@ -23,7 +23,7 @@ Before using Orbital, make sure you have:
 
 The repository includes an example source image in:
 
-- `example/androidrunner.Dockerfile`
+- `example/Dockerfile`
 
 Orbital builds the actual runner image itself by layering the GitHub Actions runner and its entrypoint on top of your configured source image.
 
@@ -49,7 +49,7 @@ runner:
   group: RunnerGroup
   labels:
     - linux
-    - arm64
+    - amd64
     - ubuntu24.04
   namePrefix: ubuntu
   count: 3
@@ -87,9 +87,12 @@ Orbital passes the following environment variables to each runner container:
 
 - `GITHUB_URL`
 - `RUNNER_NAME`
+- `RUNNER_TOKEN`
+
+Orbital also passes the following optional environment variables when configured:
+
 - `RUNNER_GROUP`
 - `RUNNER_LABELS`
-- `RUNNER_TOKEN`
 
 See `example/Dockerfile` for a reference implementation of a compatible
 source image.
@@ -103,8 +106,8 @@ source image.
 - `github.appId`: GitHub App ID.
 - `github.installationId`: GitHub App installation ID.
 - `github.pem`: Path to the GitHub App private key (`.pem`).
-- `runner.group`: Runner group name. Required by the generated runner entrypoint.
-- `runner.labels`: Custom labels assigned to the runner. Required by the generated runner entrypoint.
+- `runner.group`: Optional runner group name. When set, Orbital passes it to the runner registration command.
+- `runner.labels`: Optional custom labels assigned to the runner. When set, Orbital passes them to the runner registration command.
 - `runner.namePrefix`: Prefix used for runner names.
 - `runner.count`: Number of runner containers Orbital should keep running.
 - `mount.source`: Host path mounted into the runner container.
@@ -152,5 +155,5 @@ When Orbital starts, it will:
 - Managed container names are derived from a sanitized `docker.runnerImageName` and a 1-based index.
 - Runner names are generated from `runner.namePrefix` and a 1-based index, for example `ubuntu-1`, `ubuntu-2`, and `ubuntu-3`.
 - Avoid including a trailing hyphen in `runner.namePrefix`, otherwise generated runner names become harder to read, such as `ubuntu--1`.
-- `runner.group` and `runner.labels` must be set because the generated runner entrypoint validates both values before starting the runner.
+- `runner.group` and `runner.labels` are optional. If omitted, Orbital registers the runner without those options.
 - Orbital does not start container runtimes for you. Ensure the target Docker Engine behind the configured context is already running before starting Orbital.
