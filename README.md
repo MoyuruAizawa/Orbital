@@ -159,3 +159,12 @@ When Orbital starts, it will:
 - Avoid including a trailing hyphen in `runner.namePrefix`, otherwise generated runner names become harder to read, such as `ubuntu--1`.
 - `runner.group` and `runner.labels` are optional. If omitted, Orbital registers the runner without those options.
 - Orbital does not start container runtimes for you. Ensure the target Docker Engine behind the configured context is already running before starting Orbital.
+
+## Motivation
+
+I wanted to build an ephemeral GitHub Actions self-hosted runner environment for Android app builds on an arm64 macOS machine.
+Since the officially distributed `aapt2` binary is x86, Rosetta 2 is required. The most straightforward option would be to run the self-hosted runner inside a macOS VM, but due to limitations of the Virtualization Framework, only up to two macOS VMs can be launched.
+
+To work around this, I decided to use Lima/Colima to run a Linux VM that can forward execution to Rosetta 2, and then run x86 containers on top of it.
+Based on that setup, I created Orbital as a way to launch and maintain GitHub Actions self-hosted runners on the Docker context provided by Lima/Colima.
+
