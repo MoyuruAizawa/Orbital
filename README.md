@@ -144,7 +144,7 @@ When Orbital starts, it will:
 
 ## Notes
 
-- Managed container names are derived from `docker.image` and a 1-based index, for example `androidrunner-1`, `androidrunner-2`, and `androidrunner-3`.
+- Managed container names are derived from `docker.image` and a 1-based index, for example `runner-1`, `runner-2`, and `runner-3`.
 - Runner names are generated from `runner.namePrefix` and a 1-based index, for example `ubuntu-1`, `ubuntu-2`, and `ubuntu-3`.
 - Avoid including a trailing hyphen in `runner.namePrefix`, otherwise generated runner names become harder to read, such as `ubuntu--1`.
 - If you use the sample runner image, `runner.group` and `runner.labels` must be set because the sample entrypoint validates both values before starting the runner.
