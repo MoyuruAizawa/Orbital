@@ -85,10 +85,7 @@ func ensureRunners(ctx context.Context, cfg config.Config) error {
 	for i := 0; i < cfg.Runner.Count; i++ {
 		containerName := runnerContainerName(cfg, i)
 
-		running, err := docker.IsContainerRunning(ctx, cfg.Docker.Context, containerName)
-		if err != nil {
-			return fmt.Errorf("inspect container %q: %w", containerName, err)
-		}
+		running := docker.IsContainerRunning(ctx, cfg.Docker.Context, containerName)
 		if running {
 			continue
 		}

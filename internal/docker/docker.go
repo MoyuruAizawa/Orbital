@@ -149,7 +149,7 @@ func RunContainer(
 	return err
 }
 
-func IsContainerRunning(ctx context.Context, dockerContext string, name string) (bool, error) {
+func IsContainerRunning(ctx context.Context, dockerContext string, name string) bool {
 	output, err := util.RunCommand(ctx,
 		"docker",
 		"--context", dockerContext,
@@ -158,13 +158,10 @@ func IsContainerRunning(ctx context.Context, dockerContext string, name string) 
 		name,
 	)
 	if err != nil {
-		if strings.Contains(output, "No such object") {
-			return false, nil
-		}
-		return false, err
+		return false
 	}
 
-	return strings.TrimSpace(output) == "true", nil
+	return strings.TrimSpace(output) == "true"
 }
 
 func StopContainer(ctx context.Context, dockerContext string, name string) error {
