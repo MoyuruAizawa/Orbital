@@ -17,9 +17,10 @@ type Config struct {
 }
 
 type DockerConfig struct {
-	Context         string `yaml:"context"`
-	SourceImage     string `yaml:"sourceImage"`
-	RunnerImageName string `yaml:"runnerImageName"`
+	Context         string   `yaml:"context"`
+	SourceImage     string   `yaml:"sourceImage"`
+	RunnerImageName string   `yaml:"runnerImageName"`
+	RunOptions      []string `yaml:"runOptions"`
 }
 
 type GithubConfig struct {
@@ -76,6 +77,11 @@ func validateConfig(config Config) error {
 	}
 	if strings.TrimSpace(config.Docker.RunnerImageName) == "" {
 		return fmt.Errorf("docker.runnerImageName is required")
+	}
+	for _, option := range config.Docker.RunOptions {
+		if strings.TrimSpace(option) == "" {
+			return fmt.Errorf("docker.runOptions must not contain empty values")
+		}
 	}
 	if strings.TrimSpace(config.Github.Org) == "" {
 		return fmt.Errorf("github.org is required")

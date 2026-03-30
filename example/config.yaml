@@ -2,6 +2,8 @@ docker:
   context: default
   sourceImage: source:latest
   runnerImageName: orbital-runner:latest
+  runOptions:
+    - --cpus=2
 
 github:
   org: ExampleOrg

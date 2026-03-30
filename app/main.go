@@ -110,6 +110,7 @@ func ensureRunners(ctx context.Context, cfg config.Config) error {
 			ctx,
 			cfg.Docker.Context,
 			cfg.Docker.RunnerImageName,
+			cfg.Docker.RunOptions,
 			containerName,
 			cfg.Github.Url(),
 			token,
@@ -117,7 +118,8 @@ func ensureRunners(ctx context.Context, cfg config.Config) error {
 			cfg.Runner.Group,
 			cfg.Runner.Labels,
 			cfg.Mount.Source,
-			cfg.Mount.Target); err != nil {
+			cfg.Mount.Target,
+		); err != nil {
 			return fmt.Errorf("run container %q: %w", containerName, err)
 		}
 

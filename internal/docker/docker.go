@@ -123,6 +123,7 @@ func RunContainer(
 	ctx context.Context,
 	dockerContext string,
 	runnerImageName string,
+	runOptions []string,
 	containerName string,
 	githubUrl string,
 	runnerToken string,
@@ -132,20 +133,23 @@ func RunContainer(
 	mntSrcPath string,
 	mntDestPath string,
 ) error {
-	_, err := util.RunStreamCommand(ctx,
-		"docker",
+	args := []string{
 		"--context", dockerContext,
 		"run",
 		"-d",
 		"--name", containerName,
-		"-e", "GITHUB_URL="+githubUrl,
-		"-e", "RUNNER_NAME="+runnerName,
-		"-e", "RUNNER_GROUP="+runnerGroup,
-		"-e", "RUNNER_LABELS="+strings.Join(runnerLabels, ","),
-		"-e", "RUNNER_TOKEN="+runnerToken,
-		"-v", mntSrcPath+":"+mntDestPath,
-		runnerImageName,
-	)
+		"-e", "GITHUB_URL=" + githubUrl,
+		"-e", "RUNNER_NAME=" + runnerName,
+		"-e", "RUNNER_GROUP=" + runnerGroup,
+		"-e", "RUNNER_LABELS=" + strings.Join(runnerLabels, ","),
+		"-e", "RUNNER_TOKEN=" + runnerToken,
+		"-v", mntSrcPath + ":" + mntDestPath,
+	}
+
+	args = append(args, runOptions...)
+	args = append(args, runnerImageName)
+
+	_, err := util.RunStreamCommand(ctx, "docker", args...)
 	return err
 }
 

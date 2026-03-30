@@ -40,6 +40,8 @@ docker:
   context: default
   sourceImage: source:latest
   runnerImageName: orbital-runner:latest
+  runOptions:
+    - --cpus=2
 
 github:
   org: ExampleOrg
@@ -104,6 +106,7 @@ source image.
 - `docker.context`: Name of the Docker context Orbital should use.
 - `docker.sourceImage`: Existing Docker image used as the `FROM` image when Orbital builds the runner image.
 - `docker.runnerImageName`: Tag name for the runner image built by Orbital and used for runner containers.
+- `docker.runOptions`: Optional additional arguments passed to `docker run` before the image name. Specify them as a YAML string array in the order you want them applied.
 - `github.org`: GitHub organization name.
 - `github.appId`: GitHub App ID.
 - `github.installationId`: GitHub App installation ID.
@@ -158,6 +161,7 @@ When Orbital starts, it will:
 - Runner names are generated from `runner.namePrefix` and a 1-based index, for example `ubuntu-1`, `ubuntu-2`, and `ubuntu-3`.
 - Avoid including a trailing hyphen in `runner.namePrefix`, otherwise generated runner names become harder to read, such as `ubuntu--1`.
 - `runner.group` and `runner.labels` are optional. If omitted, Orbital registers the runner without those options.
+- `docker.runOptions` is optional. Use it for extra container runtime flags such as `--platform=...`, `--network=...`, or multi-part options like `-e`, `FOO=bar`.
 - Orbital does not start container runtimes for you. Ensure the target Docker Engine behind the configured context is already running before starting Orbital.
 
 ## Motivation
